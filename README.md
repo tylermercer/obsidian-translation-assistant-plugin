@@ -1,6 +1,12 @@
-# Obsidian Sample Plugin
+# Obsidian Translation Assistant Plugin
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+⚠️This plugin is very WIP and does not work yet!⚠️
+
+This is a plugin for Obsidian (https://obsidian.md) that enables users to receive contextualized assistance while manually translating files (currently only supports English-to-Spanish, as that is my current language learning goal, but I might make this configurable).
+
+This plugin is based on [the Obsidian sample plugin](https://github.com/obsidianmd/obsidian-sample-plugin) (README below).
+
+---
 
 This project uses TypeScript to provide type checking and documentation.
 The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
