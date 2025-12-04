@@ -72,8 +72,19 @@ export default class AnthropicTranslatorPlugin extends Plugin {
 	}
 
 	async activateView() {
-		this.app.workspace.detachLeavesOfType(VIEW_TYPE_TRANSLATION_ASSISTANT);
-		await this.app.workspace.getRightLeaf(false)?.setViewState({ type: VIEW_TYPE_TRANSLATION_ASSISTANT });
+		const leaf = (this.app.workspace.getRightLeaf(false) ??
+			this.app.workspace.getRightLeaf(true))!;
+			
+		if (!leaf) {
+			new Notice('Unable to open Translator sidebar.');
+			return;
+		}
+
+		await leaf.setViewState({
+			type: VIEW_TYPE_TRANSLATION_ASSISTANT,
+			active: true
+		});
+		this.app.workspace.revealLeaf(leaf);
 	}
 
 	async handleSuggestionRequest(editor: Editor, opts: { mode?: string } = {}) {
