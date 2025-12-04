@@ -6,3 +6,14 @@ available in the app when your plugin is enabled.
 If your plugin does not need CSS, delete this file.
 
 */
+.translator-header {
+  margin-bottom: 8px;
+}
+.translator-api {
+  margin-top: 8px;
+}
+.translator-suggestions {
+  background: var(--background-modifier-card);
+  padding: 8px;
+  border-radius: 6px;
+}
