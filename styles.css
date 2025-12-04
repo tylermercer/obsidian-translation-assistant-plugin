@@ -7,10 +7,10 @@ If your plugin does not need CSS, delete this file.
 
 */
 .translator-header {
-  margin-bottom: 8px;
+  margin: 8px;
 }
 .translator-api {
-  margin-top: 8px;
+  margin: 8px;
 }
 .translator-suggestions {
   background: var(--background-modifier-card);

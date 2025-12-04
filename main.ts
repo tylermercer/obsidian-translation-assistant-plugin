@@ -23,14 +23,7 @@ export default class AnthropicTranslatorPlugin extends Plugin {
 
 		// Add a ribbon icon to open the view
 		this.addRibbonIcon('languages', 'Open Translator', () => {
-			new Notice('Opening Translator sidebar…');
-			this.activateView()
-				.then(() => {
-					return new Notice('Translator sidebar opened.');
-				}).catch((e) => {
-					console.error(e);
-					new Notice('Error opening Translator sidebar: ' + String(e));
-				});
+			this.activateView();
 		});
 
 		// Register the sidebar view
@@ -72,8 +65,8 @@ export default class AnthropicTranslatorPlugin extends Plugin {
 	}
 
 	async activateView() {
-		const leaf = (this.app.workspace.getRightLeaf(false) ??
-			this.app.workspace.getRightLeaf(true))!;
+		const leaf = (this.app.workspace.getLeftLeaf(false) ??
+			this.app.workspace.getLeftLeaf(true))!;
 			
 		if (!leaf) {
 			new Notice('Unable to open Translator sidebar.');
