@@ -21,10 +21,12 @@ export default class AnthropicTranslatorPlugin extends Plugin {
 	view?: TranslationAssistantSidebarView;
 
 	async onload() {
+		console.log('Loading Anthropic Translator Plugin...');
 		await this.loadSettings();
-
+		
 		// Add a ribbon icon to open the view
 		this.addRibbonIcon('languages', 'Open Translator', () => {
+			console.log('Opening Translator sidebar view...');
 			this.activateView();
 		});
 

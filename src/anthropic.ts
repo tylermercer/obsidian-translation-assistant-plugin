@@ -10,14 +10,13 @@ export async function callAnthropicApiStream(
         throw new Error('Missing Anthropic API key. Set it in plugin settings.');
     }
 
-    const options: ClientOptions = {
-        apiKey,
-        dangerouslyAllowBrowser: true, // It's BYOK anyway
-    }
+    const anthropic = new Anthropic({
+            apiKey,
+            dangerouslyAllowBrowser: true, // It's BYOK anyway
+    });
 
-    console.log(options);
-
-    const anthropic = new Anthropic(options);
+    
+    console.log('Calling Anthropic API...');
 
     const stream = anthropic.messages
         .stream(
