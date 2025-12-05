@@ -21,13 +21,12 @@ export default class AnthropicTranslatorPlugin extends Plugin {
 	view?: TranslationAssistantSidebarView;
 
 	async onload() {
-		console.log('Loading Anthropic Translator Plugin...');
+		console.log('Loading Translation Assistant Plugin...');
 		await this.loadSettings();
 		
 		// Add a ribbon icon to open the view
-		this.addRibbonIcon('languages', 'Open Translator', () => {
-			console.log('Opening Translator sidebar view...');
-			this.activateView();
+		this.addRibbonIcon('languages', 'Open Translation Assistant', async () => {
+			await this.activateView();
 		});
 
 		// Register the sidebar view
@@ -42,7 +41,7 @@ export default class AnthropicTranslatorPlugin extends Plugin {
 			name: 'Suggest translation assistance at cursor',
 			editorCallback: (editor: Editor, view: MarkdownView) => {
 				this.handleSuggestionRequest(editor);
-			}
+			},
 		});
 
 		this.addCommand({
@@ -50,6 +49,14 @@ export default class AnthropicTranslatorPlugin extends Plugin {
 			name: 'Suggest word choices at cursor',
 			editorCallback: (editor: Editor, view: MarkdownView) => {
 				this.handleSuggestionRequest(editor, { mode: 'words' });
+			}
+		});
+
+		this.addCommand({
+			id: 'translation-assistant-activate',
+			name: 'Open Translation Assistant sidebar',
+			callback: async () => {
+				await this.activateView();
 			}
 		});
 
@@ -69,11 +76,12 @@ export default class AnthropicTranslatorPlugin extends Plugin {
 	}
 
 	async activateView() {
+		console.log('Opening Translation Assistant sidebar view...');
 		const leaf = (this.app.workspace.getLeftLeaf(false) ??
 			this.app.workspace.getLeftLeaf(true))!;
 
 		if (!leaf) {
-			new Notice('Unable to open Translator sidebar.');
+			new Notice('Unable to open Translation Assistant sidebar.');
 			return;
 		}
 
@@ -86,7 +94,7 @@ export default class AnthropicTranslatorPlugin extends Plugin {
 
 	async handleSuggestionRequest(editor: Editor, opts: { mode?: string } = {}) {
 		if (!this.view) {
-			new Notice('Open the Anthropic Translator sidebar first.');
+			new Notice('Open the Translation Assistant sidebar first.');
 			return;
 		}
 
