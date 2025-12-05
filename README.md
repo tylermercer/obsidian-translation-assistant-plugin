@@ -1,7 +1,5 @@
 # Obsidian Translation Assistant Plugin
 
-⚠️This plugin is very WIP and does not work yet!⚠️
-
 This is a plugin for Obsidian (https://obsidian.md) that enables users to receive contextualized assistance while manually translating files (currently only supports English-to-Spanish, as that is my current language learning goal, but I might make this configurable).
 
 This plugin is based on [the Obsidian sample plugin](https://github.com/obsidianmd/obsidian-sample-plugin) (README below).
