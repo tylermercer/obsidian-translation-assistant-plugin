@@ -1,11 +1,13 @@
 import { ItemView, Notice, WorkspaceLeaf } from "obsidian";
 import TranslationAssistantPlugin from "./main";
 import { VIEW_TYPE_TRANSLATION_ASSISTANT } from "./types";
+import * as smd from './streaming-markdown';
 
 export class TranslationAssistantSidebarView extends ItemView {
 	plugin: TranslationAssistantPlugin;
 	containerElInner: HTMLElement;
 	suggestionsEl: HTMLElement;
+	parser: ReturnType<typeof smd.parser> | null = null;
 
 	constructor(leaf: WorkspaceLeaf, plugin: TranslationAssistantPlugin) {
 		super(leaf);
@@ -70,13 +72,31 @@ export class TranslationAssistantSidebarView extends ItemView {
 		if (!this.suggestionsEl) return;
 		this.suggestionsEl.textContent = 'Loading…';
 	}
-	appendResult(text: string) {
+
+	private initializeParser() {
 		if (!this.suggestionsEl) return;
-		this.suggestionsEl.textContent = this.suggestionsEl.textContent + text;
+		// Clear element and set up parser
+		this.suggestionsEl.innerHTML = '';
+		const renderer = smd.default_renderer(this.suggestionsEl);
+		this.parser = smd.parser(renderer);
 	}
+
+	appendResult(text: string) {
+		if (!this.parser) {
+			// Fallback: if parser not initialized, initialize it
+			this.initializeParser();
+		}
+		if (this.parser) {
+			smd.parser_write(this.parser, text);
+		}
+	}
+
 	setResult(text: string) {
-		if (!this.suggestionsEl) return;
-		this.suggestionsEl.textContent = text;
+		// Reset parser and render full markdown
+		this.initializeParser();
+		if (this.parser) {
+			smd.parser_write(this.parser, text);
+		}
 	}
 	clearResult() {
 		if (!this.suggestionsEl) return;
