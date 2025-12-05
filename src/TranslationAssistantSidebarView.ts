@@ -1,0 +1,89 @@
+import { ItemView, Notice, WorkspaceLeaf } from "obsidian";
+import TranslationAssistantPlugin from "./main";
+import { VIEW_TYPE_TRANSLATION_ASSISTANT } from "./types";
+
+export class TranslationAssistantSidebarView extends ItemView {
+	plugin: TranslationAssistantPlugin;
+	containerElInner: HTMLElement;
+	suggestionsEl: HTMLElement;
+
+	constructor(leaf: WorkspaceLeaf, plugin: TranslationAssistantPlugin) {
+		super(leaf);
+		this.plugin = plugin;
+		this.containerElInner = createDiv();
+	}
+
+	getViewType() {
+		return VIEW_TYPE_TRANSLATION_ASSISTANT;
+	}
+
+	getDisplayText() {
+		return 'Translation Assistant';
+	}
+
+	async onOpen() {
+		const container = this.containerEl;
+		container.empty();
+
+		// Header: source file selector
+		const header = container.createEl('div', { cls: 'translator-header' });
+		header.createEl('label', { text: 'Source file (English):' });
+
+		// Simple selector: list markdown files
+		const select = header.createEl('select');
+		select.style.width = '100%';
+
+		const files = this.app.vault.getMarkdownFiles();
+		const emptyOpt = select.createEl('option');
+		emptyOpt.value = '';
+		emptyOpt.text = '-- Select --';
+
+		files.forEach((f) => {
+			const opt = select.createEl('option');
+			opt.value = f.path;
+			opt.text = f.path;
+		});
+
+		if (this.plugin.settings.sourceFilePath) select.value = this.plugin.settings.sourceFilePath;
+
+		select.onchange = async () => {
+			const val = (select.value && select.value !== '') ? select.value : null;
+			this.plugin.settings.sourceFilePath = val;
+			await this.plugin.saveSettings();
+			new Notice('Source file saved.');
+		};
+
+		// Suggestions area
+		this.suggestionsEl = container.createEl('div', { cls: 'translator-suggestions' });
+		this.suggestionsEl.style.marginTop = '8px';
+		this.suggestionsEl.style.whiteSpace = 'pre-wrap';
+		this.suggestionsEl.style.maxHeight = '60vh';
+		this.suggestionsEl.style.overflow = 'auto';
+		this.suggestionsEl.textContent = 'Press the command (from editor) to request suggestions.';
+	}
+
+	async onClose() {
+		// Nothing special
+	}
+
+	showLoading() {
+		if (!this.suggestionsEl) return;
+		this.suggestionsEl.textContent = 'Loading…';
+	}
+	appendResult(text: string) {
+		if (!this.suggestionsEl) return;
+		this.suggestionsEl.textContent = this.suggestionsEl.textContent + text;
+	}
+	setResult(text: string) {
+		if (!this.suggestionsEl) return;
+		this.suggestionsEl.textContent = text;
+	}
+	clearResult() {
+		if (!this.suggestionsEl) return;
+		this.suggestionsEl.textContent = '';
+	}
+	showError(err: string) {
+		if (!this.suggestionsEl) return;
+		this.suggestionsEl.textContent = err;
+	}
+}
