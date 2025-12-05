@@ -1,19 +1,38 @@
-/*
-
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
-
-If your plugin does not need CSS, delete this file.
-
-*/
-.translator-header {
-  margin: 8px;
+select {
+  width: 100%;
 }
-.translator-api {
-  margin: 8px;
+[data-type="translation-assistant-view"] {
+  overflow: auto;
+}
+.translator-header {
+  background: var(--background-secondary);
+  padding: 8px;
+  position: sticky;
+  top: 0;
 }
 .translator-suggestions {
-  background: var(--background-modifier-card);
+  font-size: 0.9em;
   padding: 8px;
-  border-radius: 6px;
+  margin-top: 8px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  user-select: text;
+}
+
+.translator-suggestions > * + * {
+  margin-top: 0.8lh;
+}
+
+h1 {
+  font-size: 1.2em;
+  margin: 0;
+}
+h2 {
+  font-size: 1.1em;
+  margin: 0;
+}
+h3, h4, h5, h6 {
+  font-size: 1em;
+  margin: 0;
 }

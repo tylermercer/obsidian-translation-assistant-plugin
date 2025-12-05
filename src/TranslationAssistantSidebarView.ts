@@ -33,7 +33,6 @@ export class TranslationAssistantSidebarView extends ItemView {
 
 		// Simple selector: list markdown files
 		const select = header.createEl('select');
-		select.style.width = '100%';
 
 		const files = this.app.vault.getMarkdownFiles();
 		const emptyOpt = select.createEl('option');
@@ -57,10 +56,6 @@ export class TranslationAssistantSidebarView extends ItemView {
 
 		// Suggestions area
 		this.suggestionsEl = container.createEl('div', { cls: 'translator-suggestions' });
-		this.suggestionsEl.style.marginTop = '8px';
-		this.suggestionsEl.style.whiteSpace = 'pre-wrap';
-		this.suggestionsEl.style.maxHeight = '60vh';
-		this.suggestionsEl.style.overflow = 'auto';
 		this.suggestionsEl.textContent = 'Press the command (from editor) to request suggestions.';
 	}
 
