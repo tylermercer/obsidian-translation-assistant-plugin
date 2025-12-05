@@ -147,7 +147,11 @@ export default class AnthropicTranslatorPlugin extends Plugin {
 
 /** Utility functions and classes **/
 
-function buildPrompt({ englishLine, spanishContext, mode }: { englishLine: string; spanishContext: string; mode: string }) {
-	// Keep the prompt compact and clear. The Anthropic model should be instructed to return JSON with suggestions.
-	return `You are an assistant helping with Spanish translations.\n\nEnglish source (single line):\n"${englishLine.replace(/"/g, '\\"')}"\n\nSpanish context around the cursor:\n"""\n${spanishContext}\n"""\n\nTask: Provide helpful suggestions for the Spanish text at the cursor. If the text is missing, propose full translations for the English source line. Offer:\n- A short corrected / suggested Spanish phrase (1-2 options).\n- Alternative word choices (comma-separated).\n- Notes about grammar or register.\n\nReturn the result as plain text (can include short bullets). Don't be verbose.`;
+function buildPrompt({ englishLine, spanishContext, mode }: { englishLine: string; spanishContext: string; mode: string }): {
+	systemPrompt: string; userPrompt: string;
+} {
+	return {
+		systemPrompt: `You are a language learning assistant. Give the user simple, concise instruction for what he or she could type next in the translation they give you, OR how they could make it better. Choose only the most relevant of those two. If the user's translation is unfinished mid-sentence, you may assume they are looking for the next word or phrase. Omit praise or other filler text that isn't relevant instruction. Give context for your guidance to promote deep learning, e.g. explain the denotation of words you offer as suggestions.`,
+		userPrompt: `English source: ${englishLine}\n\nWIP Spanish translation: ${spanishContext}`
+	};
 }
