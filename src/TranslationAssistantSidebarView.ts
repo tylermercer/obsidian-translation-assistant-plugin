@@ -31,10 +31,12 @@ export class TranslationAssistantSidebarView extends ItemView {
 		const header = container.createEl('div', { cls: 'translator-header' });
 		header.createEl('label', { text: 'Source file (English):' });
 
-		// Simple selector: list markdown files
+		// Simple selector: list markdown files (and MDX)
 		const select = header.createEl('select');
 
-		const files = this.app.vault.getMarkdownFiles();
+		const files = this.app.vault.getFiles().filter(f => ['md', 'mdx'].includes(f.extension));
+		files.sort((a, b) => a.path.localeCompare(b.path));
+
 		const emptyOpt = select.createEl('option');
 		emptyOpt.value = '';
 		emptyOpt.text = '-- Select --';
