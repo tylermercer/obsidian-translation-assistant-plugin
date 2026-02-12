@@ -1,7 +1,7 @@
 {
 	"id": "translation-assistant",
 	"name": "Translation Assistant",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"minAppVersion": "0.15.0",
 	"description": "Provides AI guidance (BYOK) to help language learners manually translate documents",
 	"author": "Tyler Mercer",
