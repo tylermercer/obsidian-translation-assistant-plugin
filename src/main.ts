@@ -3,6 +3,7 @@ import {
     MarkdownView,
     Notice,
     Plugin,
+    TFile,
     WorkspaceLeaf
 } from 'obsidian';
 import { callAnthropicApiStream } from './anthropic';
@@ -14,21 +15,46 @@ import {
     VIEW_TYPE_TRANSLATION_ASSISTANT,
 } from './types';
 
-function extractContextAtPosition(content: string, cursor: { line: number; ch: number }) {
+/**
+ * Extracts context around the cursor, but only from the body (post-frontmatter).
+ */
+function extractContextAtPosition(content: string, bodyLineIndex: number) {
     const lines = content.split(/\r?\n/);
-    const lineIndex = cursor.line;
-
-    const prev = lines[Math.max(0, lineIndex - 1)] || '';
-    const cur = lines[lineIndex] || '';
-    const next = lines[Math.min(lines.length - 1, lineIndex + 1)] || '';
+    const prev = lines[Math.max(0, bodyLineIndex - 1)] || '';
+    const cur = lines[bodyLineIndex] || '';
+    const next = lines[Math.min(lines.length - 1, bodyLineIndex + 1)] || '';
 
     return `${prev}\n${cur}\n${next}`.trim();
 }
 
-function getLineSafe(text: string, lineNumber: number) {
-    const lines = text.split(/\r?\n/);
-    if (lineNumber < 0 || lineNumber >= lines.length) return '';
-    return lines[lineNumber];
+/**
+ * Helper to split content into frontmatter and body, returning the line offset.
+ */
+function parseFileStructure(content: string): { bodyLines: string[], offset: number } {
+    const lines = content.split(/\r?\n/);
+    if (lines[0] !== '---') {
+        return { bodyLines: lines, offset: 0 };
+    }
+
+    // Find the closing ---
+    let closingIndex = -1;
+    for (let i = 1; i < lines.length; i++) {
+        if (lines[i] === '---') {
+            closingIndex = i;
+            break;
+        }
+    }
+
+    if (closingIndex === -1) {
+        return { bodyLines: lines, offset: 0 };
+    }
+
+    // The body starts after the closing dashes
+    const offset = closingIndex + 1;
+    return { 
+        bodyLines: lines.slice(offset), 
+        offset 
+    };
 }
 
 export default class AnthropicTranslatorPlugin extends Plugin {
@@ -91,19 +117,16 @@ export default class AnthropicTranslatorPlugin extends Plugin {
     }
 
     async activateView() {
-        console.log('Opening Translation Assistant sidebar view...');
-        const leaf = (this.app.workspace.getLeftLeaf(false) ??
-            this.app.workspace.getLeftLeaf(true))!;
-
+        let leaf = this.app.workspace.getLeavesOfType(VIEW_TYPE_TRANSLATION_ASSISTANT)[0];
+        
         if (!leaf) {
-            new Notice('Unable to open Translation Assistant sidebar.');
-            return;
+            leaf = (this.app.workspace.getLeftLeaf(false) ?? this.app.workspace.getLeftLeaf(true))!;
+            await leaf.setViewState({
+                type: VIEW_TYPE_TRANSLATION_ASSISTANT,
+                active: true
+            });
         }
-
-        await leaf.setViewState({
-            type: VIEW_TYPE_TRANSLATION_ASSISTANT,
-            active: true
-        });
+        
         this.app.workspace.revealLeaf(leaf);
     }
 
@@ -113,38 +136,43 @@ export default class AnthropicTranslatorPlugin extends Plugin {
             return;
         }
 
+        const activeFile = this.app.workspace.getActiveFile();
+        if (!activeFile) return;
+
+        // 1. Determine the relative line index in the current (Spanish) file
+        const currentFullContent = await this.app.vault.read(activeFile);
+        const { bodyLines: currentBody, offset: currentOffset } = parseFileStructure(currentFullContent);
+        
         const cursor = editor.getCursor();
-        const line = cursor.line;
-        const file = this.app.workspace.getActiveFile();
-        if (!file) {
-            new Notice('No active file in editor.');
+        const bodyLineIndex = cursor.line - currentOffset;
+
+        if (bodyLineIndex < 0) {
+            new Notice('Cursor is inside the frontmatter. Move it to the translation text.');
             return;
         }
 
-        const content = await this.app.vault.read(file);
-        const spanishContext = extractContextAtPosition(content, editor.getCursor());
-
+        // 2. Get the Source (English) file
         if (!this.settings.sourceFilePath) {
-            new Notice('No source file selected in the plugin settings or sidebar.');
+            new Notice('No source file selected in settings.');
             return;
         }
 
         const sourceFile = this.app.vault.getAbstractFileByPath(this.settings.sourceFilePath);
-        if (!sourceFile) {
-            new Notice('Selected source file not found in the vault.');
+        if (!(sourceFile instanceof TFile)) {
+            new Notice('Selected source file not found.');
             return;
         }
 
-        // Read English source
-        const englishText = await this.app.vault.read(sourceFile as any);
+        const sourceFullContent = await this.app.vault.read(sourceFile);
+        const { bodyLines: sourceBody } = parseFileStructure(sourceFullContent);
 
-        // Heuristic: match by line number (simple v1)
-        const englishLine = getLineSafe(englishText, line);
+        // 3. Match the line (Heuristic: Body line N matches Body line N)
+        const englishLine = sourceBody[bodyLineIndex] || '[End of source file]';
+        const spanishContext = extractContextAtPosition(currentBody.join('\n'), bodyLineIndex);
 
-        // Build prompt
+        // 4. Build prompt and call API
         const prompt = buildPrompt({ englishLine, spanishContext, mode: opts.mode || 'general' });
 
-        // Show loading in the view
         this.view.showLoading();
 
         try {
@@ -159,22 +187,16 @@ export default class AnthropicTranslatorPlugin extends Plugin {
             this.view.setResult(response);
         } catch (e) {
             console.error(e);
-            if (e instanceof Error) {
-                this.view.showError(e.message);
-                return;
-            }
-            this.view.showError(e.message + ': ' + e.stack);
+            this.view.showError(e.message || 'An unknown error occurred.');
         }
     }
 }
-
-/** Utility functions and classes **/
 
 function buildPrompt({ englishLine, spanishContext, mode }: { englishLine: string; spanishContext: string; mode: string }): {
     systemPrompt: string; userPrompt: string;
 } {
     return {
-        systemPrompt: `You are a language learning assistant. Give the user simple, concise instruction for what he or she could type next in the translation they give you, OR how they could make it better. Choose only the most relevant of those two. If the user's translation is unfinished mid-sentence, you may assume they are looking for the next word or phrase. Omit praise or other filler text that isn't relevant instruction. Give context for your guidance to promote deep learning, e.g. explain the denotation of words you offer as suggestions.`,
-        userPrompt: `English source: ${englishLine}\n\nWIP Spanish translation: ${spanishContext}`
+        systemPrompt: `You are a language learning assistant. Give the user simple, concise instruction for what he or she could type next in the translation they give you, OR how they could make it better. Omit praise. Explain the denotation of words to promote deep learning.`,
+        userPrompt: `Target line to translate: "${englishLine}"\n\nUser's current progress in translation (context):\n${spanishContext}`
     };
 }
