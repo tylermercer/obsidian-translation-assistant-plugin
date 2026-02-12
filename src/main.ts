@@ -6,8 +6,6 @@ import {
 	WorkspaceLeaf
 } from 'obsidian';
 import { callAnthropicApiStream } from './anthropic';
-import { extractContextAtPosition } from './content-utils/extractContentAtPosition';
-import { getLineSafe } from './content-utils/getLineSafe';
 import { TranslationAssistantSettingTab } from './TranslationAssistantSettingTab';
 import { TranslationAssistantSidebarView } from './TranslationAssistantSidebarView';
 import {
@@ -16,6 +14,23 @@ import {
 	VIEW_TYPE_TRANSLATION_ASSISTANT,
 } from './types';
 
+function extractContextAtPosition(content: string, cursor: { line: number; ch: number }) {
+	const lines = content.split(/\r?\n/);
+	const lineIndex = cursor.line;
+
+	const prev = lines[Math.max(0, lineIndex - 1)] || '';
+	const cur = lines[lineIndex] || '';
+	const next = lines[Math.min(lines.length - 1, lineIndex + 1)] || '';
+
+	return `${prev}\n${cur}\n${next}`.trim();
+}
+
+function getLineSafe(text: string, lineNumber: number) {
+	const lines = text.split(/\r?\n/);
+	if (lineNumber < 0 || lineNumber >= lines.length) return '';
+	return lines[lineNumber];
+}
+
 export default class AnthropicTranslatorPlugin extends Plugin {
 	settings: TranslationAssistantSettings;
 	view?: TranslationAssistantSidebarView;
@@ -23,7 +38,7 @@ export default class AnthropicTranslatorPlugin extends Plugin {
 	async onload() {
 		console.log('Loading Translation Assistant Plugin...');
 		await this.loadSettings();
-		
+
 		// Add a ribbon icon to open the view
 		this.addRibbonIcon('languages', 'Open Translation Assistant', async () => {
 			await this.activateView();
